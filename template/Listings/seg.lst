@@ -1,0 +1,56 @@
+C51 COMPILER V9.54   SEG                                                                   03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE SEG
+OBJECT MODULE PLACED IN .\Objects\seg.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE seg.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG OBJE
+                    -CTEXTEND PRINT(.\Listings\seg.lst) OBJECT(.\Objects\seg.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "main.h"
+   3          
+   4          //码表
+   5          unsigned char code disptab[]={                       //标准字库(共阴)
+   6          //   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F  (0-15)
+   7              0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,
+   8          //black  -     H    J    K    L    N    o   P    U     t    G    Q    r   M    y  (16-31)
+   9              0x00,0x40,0x76,0x1E,0x70,0x38,0x37,0x5C,0x73,0x3E,0x78,0x3d,0x67,0x50,0x37,0x6e,
+  10             //0.   1.   2.  3.    4.    5.  6.   7.   8.    9.   -1                        (32-42)
+  11              0xBF,0x86,0xDB,0xCF,0xE6,0xED,0xFD,0x87,0xFF,0xEF,0x46};
+  12          
+  13          unsigned char dispbuf[8] = {16,16,16,16,16,16,16,16};
+  14                          
+  15          void display(void)
+  16          {
+  17   1              static unsigned char i = 0;
+  18   1              latch(6,0x00);
+  19   1              latch(6,1<<i);
+  20   1              P0 = 0xFF;
+  21   1              latch(7,~(disptab[dispbuf[i]]));
+  22   1              i = (i+1)%8;
+  23   1      }
+  24          
+  25          //清除显示
+  26          void clear(void)
+  27          {
+  28   1              unsigned char i;
+  29   1              for(i=0;i<8;i++)
+  30   1                      dispbuf[i] = 16;
+  31   1              display();
+  32   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     98    ----
+   CONSTANT SIZE    =     43    ----
+   XDATA SIZE       =      9    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

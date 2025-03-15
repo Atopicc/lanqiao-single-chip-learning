@@ -1,0 +1,92 @@
+C51 COMPILER V9.54   MAIN                                                                  03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG OBJ
+                    -ECTEXTEND PRINT(.\Listings\main.lst) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "main.h"
+   2          #include "seg.h"
+   3          #include "btn.h"
+   4          
+   5          unsigned char cnt_BTN; // 按键计数器
+   6          unsigned char LED_Data = 0x00;
+   7          
+   8          void timer1_init(void); // 初始化定时器1
+   9          void keyprocess(void);
+  10          
+  11          void timer1_init(void) // time1定时计数器配置为100ms的定时中断
+  12          {
+  13   1          AUXR &= 0xBF; // 定时器时钟12T模式
+  14   1          TMOD &= 0x0F; // 设置定时器模式
+  15   1          TL1 = 0x18;   // 设置定时初始值
+  16   1          TH1 = 0xFC;   // 设置定时初始值
+  17   1          TF1 = 0;      // 清除TF1标志
+  18   1          TR1 = 1;      // 定时器1开始计时
+  19   1          ET1 = 1;      // time1中断分允许
+  20   1          EA = 1;       // 中断总允许
+  21   1      }
+  22          
+  23          void tm1_isr() interrupt 3 // 定时器1中断服务程序
+  24          {
+  25   1          cnt_BTN++;
+  26   1          display();
+  27   1      }
+  28          
+  29          void main() // 主函数
+  30          {
+  31   1          latch(4,~LED_Data);
+  32   1          latch(5,0x00);
+  33   1          timer1_init();
+  34   1          while (1)
+  35   1          {
+  36   2              if (cnt_BTN >= 50)
+  37   2              {
+  38   3                  cnt_BTN = 0;
+  39   3                  keyprocess();
+  40   3                  // 按键任务
+  41   3              }
+  42   2          }
+  43   1      }
+  44          
+  45          void keyprocess() // 按键处理函数
+  46          {
+  47   1          btnStatus();
+  48   1      
+  49   1          if (Key_DownBTN)
+  50   1          {
+  51   2              dispbuf[0] = Key_DownBTN / 10;
+  52   2              dispbuf[1] = Key_DownBTN % 10;
+  53   2          }
+  54   1      
+C51 COMPILER V9.54   MAIN                                                                  03/15/2025 20:26:48 PAGE 2   
+
+  55   1          if (Key_UpBTN)
+  56   1          {
+  57   2              dispbuf[3] = Key_UpBTN / 10;
+  58   2              dispbuf[4] = Key_UpBTN % 10;
+  59   2          }
+  60   1      
+  61   1          if(key_long_press)
+  62   1          {
+  63   2              dispbuf[6] = key_long_press / 10;
+  64   2              dispbuf[7] = key_long_press % 10;
+  65   2          }
+  66   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    213    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      2    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

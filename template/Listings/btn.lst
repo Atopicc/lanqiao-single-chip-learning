@@ -1,0 +1,81 @@
+C51 COMPILER V9.54   BTN                                                                   03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE BTN
+OBJECT MODULE PLACED IN .\Objects\btn.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE btn.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG OBJE
+                    -CTEXTEND PRINT(.\Listings\btn.lst) OBJECT(.\Objects\btn.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "btn.h"
+   3          
+   4          unsigned char Key_TempBTN = 0,Key_DownBTN = 0,Key_UpBTN = 0,key_long_press = 0;
+   5          unsigned char Key_OldBTN = 0,long_press_value = 0;
+   6          unsigned int key_long_press_count = 0;
+   7          unsigned char key_long_press_flag = 0;
+   8          
+   9          unsigned char GetKeyBTN()
+  10          {
+  11   1              unsigned char temp = 0;
+  12   1              P3 |= 0x0F;
+  13   1              temp = P3&0x0F;
+  14   1              
+  15   1              switch(~temp)
+  16   1              {
+  17   2                      case 0xF1:return 7;break;
+  18   2                      case 0xF2:return 6;break;
+  19   2                      case 0xF4:return 5;break;
+  20   2                      case 0xF8:return 4;break;
+  21   2                      default:return 0;break;
+  22   2              }
+  23   1      }
+  24          
+  25          void btnStatus(void)
+  26          {
+  27   1              Key_TempBTN = GetKeyBTN();
+  28   1              Key_DownBTN = Key_TempBTN & (Key_OldBTN ^ Key_TempBTN);   //按下为按键值，其它为0
+  29   1              Key_UpBTN  = ~Key_TempBTN & (Key_OldBTN ^ Key_TempBTN);  //松手为抬起前的按键值，其他为0 
+  30   1              Key_OldBTN = Key_TempBTN;
+  31   1      
+  32   1              if(Key_DownBTN)
+  33   1              {
+  34   2                      key_long_press_flag = 1;
+  35   2                      long_press_value = Key_DownBTN;
+  36   2                      key_long_press_count = 0;
+  37   2              }
+  38   1              if(key_long_press_flag)
+  39   1              {
+  40   2                      key_long_press_count++;
+  41   2              }
+  42   1              if(Key_UpBTN)
+  43   1              {
+  44   2                      key_long_press_flag = 0;
+  45   2                      key_long_press_count = 0;
+  46   2              }
+  47   1              if(key_long_press_count > (long_press_time/scan_time))
+  48   1              {
+  49   2                      key_long_press = long_press_value;
+  50   2              }else
+  51   1              {
+  52   2                      key_long_press = 0;
+  53   2              }
+  54   1      }
+C51 COMPILER V9.54   BTN                                                                   03/15/2025 20:26:48 PAGE 2   
+
+  55          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    166    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      9    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

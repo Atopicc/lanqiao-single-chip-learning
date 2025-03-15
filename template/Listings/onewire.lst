@@ -1,0 +1,138 @@
+C51 COMPILER V9.54   ONEWIRE                                                               03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ONEWIRE
+OBJECT MODULE PLACED IN .\Objects\onewire.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE onewire.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG 
+                    -OBJECTEXTEND PRINT(.\Listings\onewire.lst) OBJECT(.\Objects\onewire.obj)
+
+line level    source
+
+   1          /*      #       单总线代码片段说明
+   2                  1.      本文件夹中提供的驱动代码供参赛选手完成程序设计参考。
+   3                  2.      参赛选手可以自行编写相关代码或以该代码为基础，根据所选单片机类型、�
+             -�行速度和试题
+   4                          中对单片机时钟频率的要求，进行代码调试和修改。
+   5          */
+   6          
+   7          /************以下自己补充***************/
+   8          
+   9          #include "stc15f2k60s2.h"
+  10          #include "absacc.h" //注意引用的头文件
+  11          #include "onewire.h"
+  12          
+  13          sbit DQ=P1^4;
+  14          
+  15          #define SKIP 0xCC
+  16          #define START 0x44
+  17          #define READ 0xBE
+  18          
+  19          /***************************************/
+  20          
+  21          //
+  22          void Delay_OneWire(unsigned int t)  
+  23          {
+  24   1              unsigned char i;
+  25   1              while(t--){
+  26   2                      for(i=0;i<12;i++);
+  27   2              }
+  28   1      }
+  29          
+  30          //
+  31          void Write_DS18B20(unsigned char dat)
+  32          {
+  33   1              unsigned char i;
+  34   1              for(i=0;i<8;i++)
+  35   1              {
+  36   2                      DQ = 0;
+  37   2                      DQ = dat&0x01;
+  38   2                      Delay_OneWire(5);
+  39   2                      DQ = 1;
+  40   2                      dat >>= 1;
+  41   2              }
+  42   1              Delay_OneWire(5);
+  43   1      }
+  44          
+  45          //
+  46          unsigned char Read_DS18B20(void)
+  47          {
+  48   1              unsigned char i;
+  49   1              unsigned char dat;
+  50   1        
+  51   1              for(i=0;i<8;i++)
+  52   1              {
+  53   2                      DQ = 0;
+C51 COMPILER V9.54   ONEWIRE                                                               03/15/2025 20:26:48 PAGE 2   
+
+  54   2                      dat >>= 1;
+  55   2                      DQ = 1;
+  56   2                      if(DQ)
+  57   2                      {
+  58   3                              dat |= 0x80;
+  59   3                      }           
+  60   2                      Delay_OneWire(5);
+  61   2              }
+  62   1              return dat;
+  63   1      }
+  64          
+  65          //
+  66          bit init_ds18b20(void)
+  67          {
+  68   1              bit initflag = 0;
+  69   1              
+  70   1              DQ = 1;
+  71   1              Delay_OneWire(12);
+  72   1              DQ = 0;
+  73   1              Delay_OneWire(80);
+  74   1              DQ = 1;
+  75   1              Delay_OneWire(10); 
+  76   1          initflag = DQ;     
+  77   1              Delay_OneWire(5);
+  78   1        
+  79   1              return initflag;
+  80   1      }
+  81          
+  82          /************以下自己补充***************/
+  83          /*
+  84                  DS18B20读取时序：
+  85                          初始化->跳过ROM->启动转换->延时等待->
+  86                          初始化->跳过ROM->读取温度->接收温度
+  87          */
+  88          
+  89          float GetTemputerature(void)
+  90          {
+  91   1              unsigned char TemputeratureHigh,TemputeratureLow;
+  92   1              unsigned int TemputeratureInitial;
+  93   1              init_ds18b20();
+  94   1              Write_DS18B20(SKIP);
+  95   1              Write_DS18B20(START);
+  96   1              
+  97   1              init_ds18b20();
+  98   1              Write_DS18B20(SKIP);
+  99   1              Write_DS18B20(READ);
+ 100   1              TemputeratureLow = Read_DS18B20();
+ 101   1              TemputeratureHigh = Read_DS18B20();
+ 102   1              TemputeratureInitial = (TemputeratureHigh << 8) | TemputeratureLow;
+ 103   1              /*以下为消除温度读取85代码*/
+ 104   1      //      if(TemputeratureHigh >= 0x05)
+ 105   1      //      {return 0x19;}else 
+ 106   1              return TemputeratureInitial * 0.0625;
+ 107   1      }
+ 108          
+ 109          /**************************************/
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    179    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+C51 COMPILER V9.54   ONEWIRE                                                               03/15/2025 20:26:48 PAGE 3   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

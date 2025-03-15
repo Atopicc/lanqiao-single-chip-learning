@@ -1,0 +1,33 @@
+C51 COMPILER V9.54   PWM                                                                   03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE PWM
+OBJECT MODULE PLACED IN .\Objects\pwm.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE pwm.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG OBJE
+                    -CTEXTEND PRINT(.\Listings\pwm.lst) OBJECT(.\Objects\pwm.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          
+   3          unsigned char pwm(unsigned char duty)
+   4          {
+   5   1              unsigned int t1;
+   6   1              t1 = (TH1<<8)|TL1;
+   7   1              if(t1 >= (0xFC18+(duty*10))) return 0;
+   8   1              else return 1;
+   9   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     42    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

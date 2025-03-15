@@ -1,0 +1,44 @@
+C51 COMPILER V9.54   FREQUENCE                                                             03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE FREQUENCE
+OBJECT MODULE PLACED IN .\Objects\frequence.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE frequence.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBU
+                    -G OBJECTEXTEND PRINT(.\Listings\frequence.lst) OBJECT(.\Objects\frequence.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          
+   3          void Timer0_Init_MeasureFreq(void)
+   4          {
+   5   1              AUXR &= 0x7F; // 定时器时钟12T模式,进入T0计数器的脉冲，周期1us
+   6   1              TMOD &= 0xF0; // 设置定时器模式
+   7   1              TMOD |= 0x04; // 设置成脉冲计数模式
+   8   1              TL0 = 0;          // 设置定时初始值
+   9   1              TH0 = 0;          // 设置定时初始值
+  10   1              TF0 = 0;          // 清除TF0标志
+  11   1              TR0 = 1;          // 定时器0开始计时
+  12   1              ET0 = 0;          // 关闭中断
+  13   1      }
+  14          
+  15          // 定时器初始化500ms后执行
+  16          unsigned int GetFrequence()
+  17          {
+  18   1              TR0 = 0;
+  19   1              return ((TH0 << 8) | TL0) << 1;
+  20   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     37    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

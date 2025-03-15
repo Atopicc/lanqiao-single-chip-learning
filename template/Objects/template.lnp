@@ -1,0 +1,13 @@
+".\Objects\ds1302.obj",
+".\Objects\btn.obj",
+".\Objects\frequence.obj",
+".\Objects\iic.obj",
+".\Objects\kbd.obj",
+".\Objects\main.obj",
+".\Objects\onewire.obj",
+".\Objects\pwm.obj",
+".\Objects\seg.obj",
+".\Objects\sonic.obj",
+".\Objects\uart.obj" 
+TO ".\Objects\template" 
+PRINT(".\Listings\template.m51") RAMSIZE(256) 

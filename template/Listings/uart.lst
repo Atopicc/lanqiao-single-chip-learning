@@ -1,0 +1,66 @@
+C51 COMPILER V9.54   UART                                                                  03/15/2025 20:26:49 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\Objects\uart.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE uart.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG OBJ
+                    -ECTEXTEND PRINT(.\Listings\uart.lst) OBJECT(.\Objects\uart.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          
+   3          unsigned char Uart_Rev_Data[20];
+   4          unsigned char Uart_Rev_Num; // *需测试是否全局变量
+   5          
+   6          void Uart1_Int_T2(void)
+   7          {
+   8   1        SCON = 0x50;
+   9   1        AUXR |= 0x01;
+  10   1        AUXR |= 0x04;
+  11   1        T2L = 0xC7;
+  12   1        T2H = 0xFE;
+  13   1        AUXR |= 0x10;
+  14   1        ES = 1; // 串口中断允许位
+  15   1        EA = 1; // 中断总允许位
+  16   1      }
+  17          
+  18          void sendbyte(unsigned char dat)
+  19          {
+  20   1        SBUF = dat;
+  21   1        while (TI == 0)
+  22   1          ;
+  23   1        TI = 0;
+  24   1      }
+  25          
+  26          void sendstr(unsigned char *straddr)
+  27          {
+  28   1        while (*straddr != '\0')
+  29   1          sendbyte(*straddr++);
+  30   1      }
+  31          
+  32          void Uart(void) interrupt 4
+  33          {
+  34   1        if (RI)
+  35   1        {
+  36   2          RI = 0;                             // 清除RI位
+  37   2          Uart_Rev_Data[Uart_Rev_Num] = SBUF; // 存储接收到的数据
+  38   2          Uart_Rev_Num++;
+  39   2          if (Uart_Rev_Num >= 20)
+  40   2            Uart_Rev_Num = 0;
+  41   2        }
+  42   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    134    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     21       3
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

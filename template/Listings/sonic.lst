@@ -1,0 +1,79 @@
+C51 COMPILER V9.54   SONIC                                                                 03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE SONIC
+OBJECT MODULE PLACED IN .\Objects\sonic.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE sonic.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG OB
+                    -JECTEXTEND PRINT(.\Listings\sonic.lst) OBJECT(.\Objects\sonic.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "intrins.h"
+   3          #include "sonic.h"
+   4          
+   5          #define SOMENOP {_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_
+             -nop_();_nop_();_nop_();_nop_();}
+   6          #define SonicSpeed 0.0343        //厘米每微秒
+   7          
+   8          sbit sonicTX = P1^0;
+   9          sbit sonicRX = P1^1;
+  10          
+  11          void SendWave(void);
+  12          
+  13          void Timer0Init_UtralSonic()
+  14          {
+  15   1              AUXR &= 0x7F;                   //定时器时钟12T模式,进入T0计数器的脉冲，周期1us
+  16   1              TMOD &= 0xF0;                   //设置定时器模式
+  17   1              TL0 = 0;                                //设置定时初始值
+  18   1              TH0 = 0;                                //设置定时初始值
+  19   1              TF0 = 0;                                //清除TF0标志
+  20   1              TR0 = 1;                                //定时器0开始计时
+  21   1      }
+  22          
+  23          void SendWave(void)
+  24          {
+  25   1              unsigned char i;
+  26   1              for(i=0; i<8; i++)
+  27   1              {
+  28   2                      sonicTX = 0;
+  29   2                      SOMENOP;SOMENOP;SOMENOP;SOMENOP;SOMENOP;
+  30   2                      SOMENOP;SOMENOP;SOMENOP;SOMENOP;SOMENOP;
+  31   2                      sonicTX = 1;
+  32   2                      SOMENOP;SOMENOP;SOMENOP;SOMENOP;SOMENOP;
+  33   2                      SOMENOP;SOMENOP;SOMENOP;SOMENOP;SOMENOP;
+  34   2              }
+  35   1      }
+  36          
+  37          unsigned int GetDistence(void)
+  38          {
+  39   1              unsigned int time,distence;
+  40   1              SendWave();
+  41   1              Timer0Init_UtralSonic();
+  42   1              while((sonicRX) && (TH0<80));
+  43   1              TR0 = 0;
+  44   1              if(TH0>=79)
+  45   1              {
+  46   2                      distence = 999;
+  47   2              }else{
+  48   2                      time = TH0*256+TL0; //单位微秒
+  49   2                      distence = (unsigned int)(0.5 * time * SonicSpeed);
+  50   2              }
+  51   1              return distence;
+  52   1      }
+
+C51 COMPILER V9.54   SONIC                                                                 03/15/2025 20:26:48 PAGE 2   
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    407    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

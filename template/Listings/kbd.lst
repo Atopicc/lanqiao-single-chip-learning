@@ -1,0 +1,122 @@
+C51 COMPILER V9.54   KBD                                                                   03/15/2025 20:26:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE KBD
+OBJECT MODULE PLACED IN .\Objects\kbd.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE kbd.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(..\Template) DEBUG OBJE
+                    -CTEXTEND PRINT(.\Listings\kbd.lst) OBJECT(.\Objects\kbd.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "kbd.h"
+   3          
+   4          //unsigned char trg = 0;
+   5          //unsigned char count = 0;
+   6          
+   7          unsigned char Key_Temp;
+   8          unsigned char Key_Down = 0;
+   9          unsigned char Key_Up = 0;
+  10          unsigned char Key_Old;
+  11          
+  12          unsigned char Key_Read()
+  13          {
+  14   1              unsigned int KeyDataScan; 
+  15   1              unsigned char key_value;
+  16   1              
+  17   1              P44 = 0; P42 = 1; P35 = 1; P34 = 1;
+  18   1              KeyDataScan = P3&0x0F;
+  19   1              
+  20   1              P44 = 1; P42 = 0; P35 = 1; P34 = 1;
+  21   1              KeyDataScan =(KeyDataScan<<4)|(P3&0x0F);
+  22   1              
+  23   1              P44 = 1; P42 = 1; P35 = 0; P34 = 1;
+  24   1              KeyDataScan =(KeyDataScan<<4)|(P3&0x0F);        
+  25   1              
+  26   1              P44 = 1; P42 = 1; P35 = 1; P34 = 0;
+  27   1              KeyDataScan =(KeyDataScan<<4)|(P3&0x0F);        
+  28   1              
+  29   1              switch(~KeyDataScan)    //取反，按键按下是0，不按是1 
+  30   1              {
+  31   2                      case 0x8000: key_value = 4; break;
+  32   2                      case 0x4000: key_value = 5; break;
+  33   2                      case 0x2000: key_value = 6; break;
+  34   2                      case 0x1000: key_value = 7; break;
+  35   2                      
+  36   2                      case 0x0800: key_value = 8; break;
+  37   2                      case 0x0400: key_value = 9; break;
+  38   2                      case 0x0200: key_value = 10; break;
+  39   2                      case 0x0100: key_value = 11; break;
+  40   2                      
+  41   2                      case 0x0080: key_value = 12; break;
+  42   2                      case 0x0040: key_value = 13; break;
+  43   2                      case 0x0020: key_value = 14; break;
+  44   2                      case 0x0010: key_value = 15; break;
+  45   2                      
+  46   2                      case 0x0008: key_value = 16; break;
+  47   2                      case 0x0004: key_value = 17; break;
+  48   2                      case 0x0002: key_value = 18; break;
+  49   2                      case 0x0001: key_value = 19; break;
+  50   2                      
+  51   2                      default: key_value = 0;
+  52   2              }
+  53   1              
+  54   1              return key_value;
+C51 COMPILER V9.54   KBD                                                                   03/15/2025 20:26:48 PAGE 2   
+
+  55   1      }
+  56          
+  57          void kbdProcess(void)
+  58          {
+  59   1              Key_Temp = Key_Read();
+  60   1              Key_Down = Key_Temp & (Key_Old ^ Key_Temp);   //按下为按键值，其它为0
+  61   1              Key_Up  = ~Key_Temp & (Key_Old ^ Key_Temp);  //松手为抬起前的按键值，其他为0 
+  62   1              Key_Old = Key_Temp;
+  63   1      }
+  64          
+  65          //void KEY_Status()
+  66          //{
+  67          //      unsigned char read_data = (Key_Read())^(0xff);
+  68          //      trg = read_data&(read_data^cont);
+  69          //      cont = read_data;
+  70          //}
+  71          
+  72          //unsigned char KBD(void)
+  73          //{
+  74          //      static unsigned key_val;
+  75          //      P3 = 0xf0;P42 = 1;P44 = 1;
+  76          //              if(P34 == 0) key_val = 0xe0;
+  77          //              if(P35 == 0) key_val = 0xd0;
+  78          //              if(P42 == 0) key_val = 0xb0;
+  79          //              if(P44 == 0) key_val = 0x70;
+  80          //      P3 = 0x0f;P42 = 0;P44 = 0;      
+  81          //              if(P30 == 0) key_val = key_val|0x0e;
+  82          //              if(P31 == 0) key_val = key_val|0x0d;
+  83          //              if(P32 == 0) key_val = key_val|0x0b;
+  84          //              if(P33 == 0) key_val = key_val|0x07;    
+  85          //      return key_val;
+  86          //}
+  87          // 
+  88          //void KBD_key_read(void)      //矩阵键盘
+  89          //{
+  90          //      unsigned char read_val;
+  91          //      read_val = (KBD()) ^0xff;
+  92          //      trg = read_val & (read_val ^count );
+  93          //      count =read_val;
+  94          //}
+  95          
+  96          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    355    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      4       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

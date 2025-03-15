@@ -1,0 +1,11 @@
+{
+	"files.associations": {
+		"main.h": "c",
+		"btn.h": "c",
+		"onewire.h": "c",
+		"seg.h": "c",
+		"kbd.h": "c",
+		"iic.h": "c",
+		"ds1302.h": "c"
+	}
+}
