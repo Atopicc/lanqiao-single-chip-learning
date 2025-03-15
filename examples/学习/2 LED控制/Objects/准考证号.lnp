@@ -1,0 +1,3 @@
+".\Objects\准考证号.obj" 
+TO ".\Objects\准考证号" 
+PRINT(".\Listings\准考证号.m51") RAMSIZE(256) 

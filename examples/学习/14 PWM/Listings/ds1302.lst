@@ -1,0 +1,130 @@
+C51 COMPILER V9.54   DS1302                                                                03/01/2024 21:27:07 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE DS1302
+OBJECT MODULE PLACED IN .\Objects\ds1302.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE ds1302.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listin
+                    -gs\ds1302.lst) TABS(2) OBJECT(.\Objects\ds1302.obj)
+
+line level    source
+
+   1          /*
+   2            程序说明: DS1302驱动程序
+   3            软件环境: Keil uVision 4.10 
+   4            硬件环境: CT107单片机综合实训平台 8051，12MHz
+   5            日    期: 2011-8-9
+   6          */
+   7          
+   8          #include "stc15f2k60s2.h"
+   9          #include <intrins.h>
+  10          #include "ds1302.h"
+  11          
+  12          #define Add_WriteSeconds 0x80   //写入秒地址
+  13          #define Add_ReadSeconds 0x81    //读取秒地址
+  14          #define Add_WriteMinutes 0x82   //写入分地址
+  15          #define Add_ReadMinutes 0x83    //读取分地址
+  16          #define Add_WriteHours 0x84     //写入时地址
+  17          #define Add_ReadHours 0x85      //读取时地址
+  18          #define Add_WriteDate 0x86      //写入日地址
+  19          #define Add_ReadDate 0x87       //读取日地址
+  20          #define Add_WriteMonth 0x88     //写入月地址
+  21          #define Add_ReadMonth 0x89      //读取月地址
+  22          #define Add_WriteDay 0x8A       //写入星期地址
+  23          #define Add_ReadDay 0x8B        //读取星期地址
+  24          #define Add_WriteYear 0x8C      //写入年地址
+  25          #define Add_ReadYear 0x8D       //读取年地址
+  26          #define Add_WriteWP 0x8E        //写入允许位地址
+  27          #define Add_ReadWP 0x8F         //读取允许位地址
+  28          
+  29          
+  30          unsigned char SetRTC_Data[7] = {0x23,0x08,0x13,0x06,0x23,0x59,0x54}; //年 月 日 星期 时 分 秒
+  31          unsigned char ReadRTC_Data[7] = {0x23,0x08,0x13,0x06,0x11,0x20,0x55};//年 月 日 星期 时 分 秒
+  32          
+  33          sbit SCK=P1^7;    
+  34          sbit SDA=P2^3;    
+  35          sbit RST = P1^3;   // DS1302复位                        
+  36          
+  37          void Write_Ds1302(unsigned  char temp) 
+  38          {
+  39   1        unsigned char i;
+  40   1        for (i=0;i<8;i++)       
+  41   1        { 
+  42   2          SCK=0;
+  43   2          SDA=temp&0x01;
+  44   2          temp>>=1; 
+  45   2          SCK=1;
+  46   2        }
+  47   1      }   
+  48          
+  49          void Write_Ds1302_Byte( unsigned char address,unsigned char dat )     
+  50          {
+  51   1        RST=0;  _nop_();
+  52   1        SCK=0;  _nop_();
+  53   1        RST=1;  _nop_();  
+  54   1        Write_Ds1302(address);  
+C51 COMPILER V9.54   DS1302                                                                03/01/2024 21:27:07 PAGE 2   
+
+  55   1        Write_Ds1302(dat);    
+  56   1        RST=0; 
+  57   1      }
+  58          
+  59          unsigned char Read_Ds1302_Byte ( unsigned char address )
+  60          {
+  61   1        unsigned char i,temp=0x00;
+  62   1        RST=0;  _nop_();
+  63   1        SCK=0;  _nop_();
+  64   1        RST=1;  _nop_();
+  65   1        Write_Ds1302(address);
+  66   1        for (i=0;i<8;i++)   
+  67   1        {   
+  68   2          SCK=0;
+  69   2          temp>>=1; 
+  70   2          if(SDA)
+  71   2          temp|=0x80; 
+  72   2          SCK=1;
+  73   2        } 
+  74   1        RST=0;  _nop_();
+  75   1        SCK=0;  _nop_();
+  76   1        SCK=1;  _nop_();
+  77   1        SDA=0;  _nop_();
+  78   1        SDA=1;  _nop_();
+  79   1        return (temp);      
+  80   1      }
+  81          
+  82          void SetRTC(void)
+  83          {
+  84   1        Write_Ds1302_Byte(Add_WriteWP,0x00);
+  85   1        Write_Ds1302_Byte(Add_WriteYear,SetRTC_Data[0]);
+  86   1        Write_Ds1302_Byte(Add_WriteMonth,SetRTC_Data[1]);
+  87   1        Write_Ds1302_Byte(Add_WriteDate,SetRTC_Data[2]);
+  88   1        Write_Ds1302_Byte(Add_WriteDay,SetRTC_Data[3]);
+  89   1        Write_Ds1302_Byte(Add_WriteHours,SetRTC_Data[4]);
+  90   1        Write_Ds1302_Byte(Add_WriteMinutes,SetRTC_Data[5]);
+  91   1        Write_Ds1302_Byte(Add_WriteSeconds,SetRTC_Data[6]);
+  92   1        Write_Ds1302_Byte(Add_WriteWP,0x80);
+  93   1      }
+  94          
+  95          void ReadRTC(void)
+  96          {
+  97   1        ReadRTC_Data[0]=Read_Ds1302_Byte(Add_ReadYear);
+  98   1        ReadRTC_Data[1]=Read_Ds1302_Byte(Add_ReadMonth);
+  99   1        ReadRTC_Data[2]=Read_Ds1302_Byte(Add_ReadDate);
+ 100   1        ReadRTC_Data[3]=Read_Ds1302_Byte(Add_ReadDay);
+ 101   1        ReadRTC_Data[4]=Read_Ds1302_Byte(Add_ReadHours);
+ 102   1        ReadRTC_Data[5]=Read_Ds1302_Byte(Add_ReadMinutes);
+ 103   1        ReadRTC_Data[6]=Read_Ds1302_Byte(Add_ReadSeconds);
+ 104   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    204    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

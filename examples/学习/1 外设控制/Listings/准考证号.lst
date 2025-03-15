@@ -1,0 +1,84 @@
+C51 COMPILER V9.54   ________                                                              10/23/2024 16:59:23 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ________
+OBJECT MODULE PLACED IN .\Objects\׼��֤��.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE ׼��֤��.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\List
+                    -ings\׼��֤��.lst) TABS(2) OBJECT(.\Objects\׼��֤��.obj)
+
+line level    source
+
+   1          #include "stc15f2k60s2.h"
+   2          #include "absacc.h"
+   3          
+   4          /////函数声明////
+   5          void externaldevice_IO(unsigned char beepdata,unsigned char relaydata);//IO模式，控制外部设备（�
+             -��鸣器、继电器）
+   6          void externaldevice_MM(unsigned char beepdata,unsigned char relaydata);//MM模式，控制外部设备（�
+             -��鸣器、继电器）
+   7          void delay_ms(unsigned int delaydata);//延时函数
+   8          
+   9          ////全局变量定义//////
+  10          
+  11          ///主函数//////
+  12          void main()
+  13          {
+  14   1        //实现以秒为间隔，蜂鸣器、继电器开关
+  15   1        while(1)
+  16   1        {
+  17   2          externaldevice_IO(1,1);//IO模式，控制外部设备（蜂鸣器响、继电器吸合）
+  18   2          delay_ms(1000);
+  19   2          externaldevice_IO(0,0);//IO模式，控制外部设备（蜂鸣器不响、继电器不吸合）
+  20   2          delay_ms(1000);
+  21   2        }
+  22   1      }
+  23          ////////////////////////////////
+  24          void externaldevice_IO(unsigned char beepdata,unsigned char relaydata)//IO模式，控制外部设备（�
+             -�鸣器、继电器）
+  25          {
+  26   1        unsigned char extdev_data=0;
+  27   1        if(beepdata) extdev_data|=0X40;
+  28   1        if(relaydata) extdev_data|=0X10;
+  29   1        EA = 0;//关闭中断总使能
+  30   1        P0 = extdev_data;
+  31   1        P2 = (P2 & 0X1F)|0XA0;//0b 101X XXXX 使138译码输入CBA为5，Y5输出低电平，573的LE为高锁�
+             -�状态解除
+  32   1        P0 = extdev_data;
+  33   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+  34   1        EA = 1;//打开中断总使能
+  35   1      }
+  36          ////////////////////////////////
+  37          //void externaldevice_MM(unsigned char beepdata,unsigned char relaydata)//MM模式，控制外部设备（
+             -蜂鸣器、继电器）
+  38          //{
+  39          //  unsigned char extdev_data=0;
+  40          //  if(beepdata) extdev_data|=0X40;
+  41          //  if(relaydata) extdev_data|=0X10;
+  42          //  EA = 0;//关闭中断总使能
+  43          //  XBYTE(0XA000) = extdev_data;
+  44          //  P2 &= 0X1F;//0b 000X XXXX //锁存数据
+  45          //  EA = 1;//打开中断总使能
+  46          //}
+  47          ////////////////////////////////
+  48          void delay_ms(unsigned int delaydata)//延时函数
+  49          {
+C51 COMPILER V9.54   ________                                                              10/23/2024 16:59:23 PAGE 2   
+
+  50   1        unsigned int i;
+  51   1        while(delaydata--)
+  52   1          for(i=640;i>0;i--);
+  53   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     93    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

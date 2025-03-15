@@ -1,0 +1,774 @@
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ________
+OBJECT MODULE PLACED IN .\Objects\׼��֤��.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE ׼��֤��.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\List
+                    -ings\׼��֤��.lst) TABS(2) OBJECT(.\Objects\׼��֤��.obj)
+
+line level    source
+
+   1          #include "stc15f2k60s2.h"
+   2          #include "absacc.h"
+   3          #include <stdio.h>
+   4          #include "iic.h"
+   5          #include "onewire.h"
+   6          #include "INTRINS.H"
+   7          #include "ds1302.h"
+   8          
+   9          /////函数声明////
+  10          //IO模式，控制外部设备（蜂鸣器、继电器）
+  11          void externaldevice_IO(unsigned char beepdata,unsigned char relaydata);
+  12          //MM模式，控制外部设备（蜂鸣器、继电器）
+  13          void externaldevice_MM(unsigned char beepdata,unsigned char relaydata);
+  14          //延时函数
+  15          void delay_ms(unsigned int delaydata);
+  16          //IO模式，控制LED
+  17          void LED_IO(unsigned char LEDdata);      
+  18          //MM模式，控制LED
+  19          void LED_MM(unsigned char LEDdata);      
+  20          //time1定时计数器配置为1ms的定时中断
+  21          void timer1_init(void);                  
+  22          //数码管动态刷新函数
+  23          void display_IO(void);                   
+  24          //数码管动态刷新函数
+  25          void display_MM(void);                  
+  26          //独立按键扫描程序，无有效按键按下时，返回0xFF;按键按下，返回对应序号；按
+             -键长按时，过一段时间，返回对应序号+10；松手时，返回对应序号+20。（4567）
+  27          unsigned char BTN_KeyBoardScan(void);   
+  28          //矩阵按键扫描程序，无有效按键按下时，返回0xFF;按键按下，返回对应序号；按
+             -键长按时，过一段时间，返回对应序号+20；松手时，返回对应序号+40。（4-19）
+  29          unsigned char KBD_KeyBoardScan(void);   
+  30          //串口一初始化函数，使用T2产生波特率 1200bps@12.000MHz
+  31          void Uart1_Int_T2(void);
+  32          //发射超声波函数
+  33          void SendWave(void);
+  34          //超声波测距timer0初始化函数
+  35          void Timer0Init_UtralSonic();
+  36          //超声波测距函数
+  37          void ranging(void);
+  38          //T0初始化函数，为测量信号的频率
+  39          void Timer0_Init_MeasureFreq(void);
+  40          //控制外设Motor管脚
+  41          void externaldevice_Motor(unsigned char MotorData);
+  42          
+  43          
+  44          /////////////全局变量定义//////
+  45          unsigned int gTimer_1ms=0;  //全局变量，用于计时
+  46          bit gFlag_10ms;             //全局变量，每10ms，该变量置1
+  47          bit gFlag_50ms;             //全局变量，每50ms，该变量置1
+  48          bit gFlag_100ms;            //全局变量，每100ms，该变量置1
+  49          bit gFlag_200ms;            //全局变量，每200ms，该变量置1
+  50          bit gFlag_250ms;            //全局变量，每250ms，该变量置1
+  51          bit gFlag_1000ms;           //全局变量，每1000ms，该变量置1
+  52          unsigned char dispbuf[8] = {16,16,16,16,16,16,16,16}; //显示缓冲区
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 2   
+
+  53          /*************  本地常量声明    **************/
+  54          unsigned char code disptab[]={                       //标准字库(共阴)
+  55          //   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F  (0-15)
+  56              0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F,0x77,0x7C,0x39,0x5E,0x79,0x71,
+  57          //black  -     H    J    K    L    N    o   P    U     t    G    Q    r   M    y  (16-31)
+  58              0x00,0x40,0x76,0x1E,0x70,0x38,0x37,0x5C,0x73,0x3E,0x78,0x3d,0x67,0x50,0x37,0x6e,
+  59             //0.   1.   2.  3.    4.    5.  6.   7.   8.    9.   -1                        (32-42)
+  60              0xBF,0x86,0xDB,0xCF,0xE6,0xED,0xFD,0x87,0xFF,0xEF,0x46};
+  61          
+  62          /////////串口变量定义//////////////
+  63          #define FOSC 12000000L          //系统频率
+  64          #define BAUD 1200               //串口波特率
+  65          bit PC_CMD_Flag = 0; //PC机发送命令标志位，0没收到PC机发来的有效命令
+  66          unsigned char code Uart_CMD1_Data[] = {'A','A','A','S','S','S'};
+  67          unsigned char code Uart_CMD2_Data[] = {'S','S','S','A','A','A'};
+  68          unsigned char Uart_Rev_Data[20]; //接收到的数据存储在此数组中
+  69          unsigned char Uart_Rev_Num = 0; //接收到的数据的个数
+  70          unsigned char Uart_Rev_DelayTimees = 0; //判断PC机发来的数据是否已经接收完成
+  71          
+  72          
+  73          ////////超声波测距全局变量//////////
+  74          sbit ulTX = P1^0;       //超声波发射管脚
+  75          sbit ulRX = P1^1;       //超声波接收管脚
+  76          #define somenop {_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_nop_();_
+             -nop_();_nop_();_nop_();_nop_();};
+  77          unsigned int distence;  //距离，单位为cm。超过999则没有收到回波
+  78          
+  79          ////////////DS18B20变量//////////
+  80          /*extern unsigned int Temp_Value;   //存储温度值，实际温度的100倍
+  81          extern unsigned char Temp_Symbol;   //温度值符号，0正1负
+  82          extern float Temp_F;*/
+  83          
+  84          //////超声波ds1302全局变量////////
+  85          /*  unsigned char SetRTC_Data[7];
+  86              unsigned char ReadRTC_Data[7];*/
+  87          
+  88          ///////频率测量全局变量/////////
+  89          unsigned int Frequency;   //存储555产生信号的频率值
+  90          
+  91          /////////PWM/////////
+  92          bit PWMMod = 0;  //0时为20%占空比方波
+  93          
+  94          
+  95          ///主函数//////
+  96          void main()
+  97          {
+  98   1        unsigned char i=0;
+  99   1        unsigned char key_value = 0xFF;
+ 100   1        unsigned char AD1_value_Now = 0;
+ 101   1        unsigned char AD3_value_Now = 0;
+ 102   1        unsigned char interface;
+ 103   1      
+ 104   1        externaldevice_IO(0,0);
+ 105   1        LED_IO(0XFF);   //灭灯
+ 106   1        timer1_init();
+ 107   1        for(Temp_Value;Temp_Value>7500;rd_temperature());
+ 108   1      
+ 109   1        while(1)
+ 110   1        {
+ 111   2          if(gFlag_10ms)
+ 112   2          {
+ 113   3            gFlag_10ms = 0;
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 3   
+
+ 114   3            key_value = BTN_KeyBoardScan();
+ 115   3            if(key_value == 4)
+ 116   3            {
+ 117   4              if(PWMMod) PWMMod = 0;
+ 118   4              else PWMMod = 1;
+ 119   4            }
+ 120   3      
+ 121   3          }
+ 122   2        }
+ 123   1      
+ 124   1        while (1)
+ 125   1        {
+ 126   2          if(gFlag_200ms)
+ 127   2          {
+ 128   3            gFlag_200ms = 0;
+ 129   3            dispbuf[0] = 0x0F;
+ 130   3            dispbuf[1] = 17;
+ 131   3            dispbuf[2] = 16;
+ 132   3            if(Frequency>=10000) dispbuf[3] = Frequency/10000;
+ 133   3            else dispbuf[3] = 16;
+ 134   3            if(Frequency>=1000)  dispbuf[4] = Frequency%10000/1000;
+ 135   3            else dispbuf[4] = 16;
+ 136   3            if(Frequency>=100)  dispbuf[5] = Frequency%1000/100;
+ 137   3            else dispbuf[5] = 16;
+ 138   3            if(Frequency>=10)  dispbuf[6] = Frequency%100/10;
+ 139   3            else dispbuf[6] = 16;
+ 140   3            dispbuf[7] = Frequency%10;
+ 141   3          }
+ 142   2      
+ 143   2        }
+ 144   1        
+ 145   1      
+ 146   1        SetRTC();
+ 147   1        while(1)
+ 148   1        {
+ 149   2          if(gFlag_200ms)
+ 150   2          {
+ 151   3            gFlag_200ms = 0;
+ 152   3            ReadRTC();
+ 153   3          }
+ 154   2          if(gFlag_10ms)
+ 155   2          {
+ 156   3            gFlag_10ms = 0;
+ 157   3            key_value = KBD_KeyBoardScan();
+ 158   3            if(key_value == 12)
+ 159   3            {
+ 160   4              switch(interface)
+ 161   4              {
+ 162   5                case 0:interface = 1;break;
+ 163   5                case 1:interface = 2;break;
+ 164   5                case 2:interface = 0;break;
+ 165   5                default:break;
+ 166   5              }
+ 167   4            }
+ 168   3          }
+ 169   2           if(interface == 0)
+ 170   2          {
+ 171   3              dispbuf[0] = ReadRTC_Data[4]>>4;
+ 172   3              dispbuf[1] = ReadRTC_Data[4]&0x0F;
+ 173   3              if((ReadRTC_Data[6]&0x0F)%2 == 0)
+ 174   3              {
+ 175   4                dispbuf[2] = 17;
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 4   
+
+ 176   4              }
+ 177   3              else dispbuf[2] = 16;
+ 178   3              dispbuf[3] = ReadRTC_Data[5]>>4;
+ 179   3              dispbuf[4] = ReadRTC_Data[5]&0x0F;
+ 180   3              if((ReadRTC_Data[6]&0x0F)%2 == 0)
+ 181   3              {
+ 182   4                dispbuf[5] = 17;
+ 183   4              }
+ 184   3              else dispbuf[5] = 16;
+ 185   3              dispbuf[6] = ReadRTC_Data[6]>>4;
+ 186   3              dispbuf[7] = ReadRTC_Data[6]&0x0F;
+ 187   3          }
+ 188   2          else if(interface == 1)
+ 189   2          {
+ 190   3              dispbuf[0] = 5;
+ 191   3              dispbuf[1] = 17;
+ 192   3              dispbuf[2] = 17;
+ 193   3              dispbuf[3] = 17;
+ 194   3              dispbuf[4] = 17;
+ 195   3              dispbuf[5] = 17;
+ 196   3              dispbuf[6] = 17;
+ 197   3              dispbuf[7] = ReadRTC_Data[3]&0x0F;
+ 198   3          }
+ 199   2          else if(interface == 2)
+ 200   2          {
+ 201   3              dispbuf[0] = 2;
+ 202   3              dispbuf[1] = 0;
+ 203   3              dispbuf[2] = ReadRTC_Data[0]>>4;
+ 204   3              dispbuf[3] = ReadRTC_Data[0]&0x0F;
+ 205   3              dispbuf[4] = ReadRTC_Data[1]>>4;
+ 206   3              dispbuf[5] = ReadRTC_Data[1]&0x0F;
+ 207   3              dispbuf[6] = ReadRTC_Data[2]>>4;
+ 208   3              dispbuf[7] = ReadRTC_Data[2]&0x0F;
+ 209   3          }
+ 210   2        }
+ 211   1      
+ 212   1        //温度传感器
+ 213   1        while(1)
+ 214   1        {
+ 215   2          if(gFlag_200ms)
+ 216   2          {
+ 217   3            gFlag_200ms = 0;
+ 218   3            ranging();
+ 219   3            if(distence == 999)
+ 220   3            {
+ 221   4              dispbuf[5] = 16;
+ 222   4              dispbuf[6] = 16;
+ 223   4              dispbuf[7] = 16;
+ 224   4            }
+ 225   3            else
+ 226   3            {
+ 227   4            if(distence>=100) dispbuf[5] = distence/100;
+ 228   4            else dispbuf[5] = 16;
+ 229   4            if(distence>=10)  dispbuf[6] = distence%100/10;
+ 230   4            else dispbuf[6] = 16;
+ 231   4            dispbuf[7] = distence%10;
+ 232   4            }
+ 233   3            rd_temperature();
+ 234   3            if(Temp_Value>=1000)  dispbuf[0] = Temp_Value%10000/1000;
+ 235   3            else dispbuf[0] = 16;
+ 236   3            dispbuf[1] = Temp_Value%1000/100 + 32; //显示小数点
+ 237   3            dispbuf[2] = Temp_Value%100/10;
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 5   
+
+ 238   3            dispbuf[3] = Temp_Value%10;
+ 239   3            
+ 240   3      
+ 241   3          } 
+ 242   2        }
+ 243   1      
+ 244   1        //ADDA
+ 245   1        while(1)
+ 246   1        {
+ 247   2          if(gFlag_200ms)
+ 248   2          {
+ 249   3            gFlag_200ms = 0;
+ 250   3            ADC_PCF8591(0x01);
+ 251   3            ADC_PCF8591(0x01);
+ 252   3            AD1_value_Now = ADC_PCF8591(0x01);
+ 253   3            dispbuf[0] = AD1_value_Now/100;
+ 254   3            dispbuf[1] = AD1_value_Now%100/10;
+ 255   3            dispbuf[2] = AD1_value_Now%10;
+ 256   3            ADC_PCF8591(0x03);
+ 257   3            ADC_PCF8591(0x03);
+ 258   3            AD3_value_Now = ADC_PCF8591(0x03);
+ 259   3            dispbuf[5] = AD3_value_Now/100;
+ 260   3            dispbuf[6] = AD3_value_Now%100/10;
+ 261   3            dispbuf[7] = AD3_value_Now%10;
+ 262   3            DAC_PCF8591(AD3_value_Now);
+ 263   3          } 
+ 264   2        }
+ 265   1      
+ 266   1      
+ 267   1      
+ 268   1      
+ 269   1      //I2C任务
+ 270   1        EA = 0;
+ 271   1        i = read_EEPROM(0x00);
+ 272   1        if(i>=100)  dispbuf[5] = i/100;
+ 273   1        else dispbuf[5] = 16;
+ 274   1        if(i >= 10) dispbuf[6] = i%100/10;
+ 275   1        else dispbuf[6] = 16;
+ 276   1        dispbuf[7] = i%10;
+ 277   1        i++;
+ 278   1        write_EEPROM(0x00,i);
+ 279   1        EA = 1;
+ 280   1        while(1);
+ 281   1      
+ 282   1      
+ 283   1      //独立按键任务
+ 284   1        while(1)
+ 285   1        {
+ 286   2          if(gFlag_10ms)
+ 287   2          {
+ 288   3            gFlag_10ms = 0;
+ 289   3            key_value = KBD_KeyBoardScan();
+ 290   3          }
+ 291   2          if(key_value != 0xFF)
+ 292   2          {
+ 293   3            dispbuf[0] = key_value/10;
+ 294   3            dispbuf[1] = key_value%10;
+ 295   3            switch(key_value)
+ 296   3            {
+ 297   4              case 7:i++; break;
+ 298   4              case 11:i--; break;
+ 299   4              case 15:i += 2; break;
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 6   
+
+ 300   4              case 19:i -= 2; break;
+ 301   4              default:break;
+ 302   4            }
+ 303   3            key_value = 0xFF;
+ 304   3            dispbuf[5] = i/100;
+ 305   3            dispbuf[6] = i%100/10;
+ 306   3            dispbuf[7] = i%10;
+ 307   3          }
+ 308   2        }
+ 309   1      
+ 310   1        //实现数码管显示12345678
+ 311   1        dispbuf[0] = 1;
+ 312   1        dispbuf[1] = 2;
+ 313   1        dispbuf[2] = 3;
+ 314   1        dispbuf[3] = 4;
+ 315   1        dispbuf[4] = 5;
+ 316   1        dispbuf[5] = 6;
+ 317   1        dispbuf[6] = 7;
+ 318   1        dispbuf[7] = 8;
+ 319   1        //实现LED秒闪烁
+ 320   1        while(1)
+ 321   1        {
+ 322   2          if(gFlag_1000ms)
+ 323   2          {
+ 324   3            gFlag_1000ms = 0;
+ 325   3            LED_IO(i); //LED全亮或全灭
+ 326   3            i = ~i;
+ 327   3          }
+ 328   2          
+ 329   2        }
+ 330   1      }
+ 331          ////////////////////////////////
+ 332          void externaldevice_IO(unsigned char beepdata,unsigned char relaydata)//IO模式，控制外部设备（�
+             -�鸣器、继电器）
+ 333          {
+ 334   1        unsigned char extdev_data=0;
+ 335   1        if(beepdata) extdev_data|=0X40;
+ 336   1        if(relaydata) extdev_data|=0X10;
+ 337   1        EA = 0;//关闭中断总使能
+ 338   1        P0 = extdev_data;
+ 339   1        P2 = (P2 & 0X1F)|0XA0;//0b 101X XXXX 使138译码输入CBA为5，Y5输出低电平，573的LE为高锁�
+             -�状态解除
+ 340   1        P0 = extdev_data;
+ 341   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+ 342   1        EA = 1;//打开中断总使能
+ 343   1      }
+ 344          ////////////////////////////////
+ 345          void externaldevice_MM(unsigned char beepdata,unsigned char relaydata)//MM模式，控制外部设备（�
+             -�鸣器、继电器）
+ 346          {
+ 347   1        unsigned char extdev_data=0;
+ 348   1        if(beepdata) extdev_data|=0X40;
+ 349   1        if(relaydata) extdev_data|=0X10;
+ 350   1        EA = 0;//关闭中断总使能
+ 351   1        XBYTE[0XA000] = extdev_data;
+ 352   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+ 353   1        EA = 1;//打开中断总使能
+ 354   1      }
+ 355          ////////////////////////////////
+ 356          void delay_ms(unsigned int delaydata)//延时函数
+ 357          {
+ 358   1        unsigned int i;
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 7   
+
+ 359   1        while(delaydata--)
+ 360   1          for(i=640;i>0;i--);
+ 361   1      }
+ 362          
+ 363          /////////////////////////////
+ 364          void LED_IO(unsigned char LEDdata)//IO模式，控制LED
+ 365          {
+ 366   1        
+ 367   1        EA = 0;//关闭中断总使能
+ 368   1        P0 = LEDdata;
+ 369   1        P2 = (P2 & 0X1F)|0X80;//0b 100X XXXX 使138译码输入CBA为5，Y5输出低电平，573的LE为高锁�
+             -�状态解除
+ 370   1        P0 = LEDdata;
+ 371   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+ 372   1        EA = 1;//打开中断总使能
+ 373   1      }
+ 374          
+ 375          void LED_MM(unsigned char LEDdata)//MM模式，控制LED
+ 376          {
+ 377   1        EA = 0;//关闭中断总使能
+ 378   1        XBYTE[0X8000] = LEDdata;
+ 379   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+ 380   1        EA = 1;//打开中断总使能
+ 381   1      }
+ 382          
+ 383          /////////////////////////////
+ 384          void timer1_init(void)         //time1定时计数器配置为100ms的定时中断
+ 385          {
+ 386   1        AUXR &= 0xBF;   //定时器时钟12T模式
+ 387   1        TMOD &= 0x0F;   //设置定时器模式
+ 388   1        TL1 = 0x50;       //设置定时初始值
+ 389   1        TH1 = 0xFB;       //设置定时初始值
+ 390   1        TF1 = 0;        //清除TF1标志
+ 391   1        TR1 = 1;        //定时器1开始计时
+ 392   1        ET1 = 1;        //time1中断分允许
+ 393   1        EA = 1;         //中断总允许
+ 394   1      }
+ 395          
+ 396          void tm1_isr() interrupt 3
+ 397          {
+ 398   1        static unsigned char temp8 = 0;
+ 399   1        temp8++;
+ 400   1        if(temp8 == 10) //维持一个ms的中断
+ 401   1        {
+ 402   2          temp8 = 0;
+ 403   2          gTimer_1ms++;
+ 404   2          if(gTimer_1ms == 60000)    gTimer_1ms=0;
+ 405   2          if(gTimer_1ms%10 == 0)    gFlag_10ms=1;
+ 406   2          if(gTimer_1ms%50 == 0)    gFlag_50ms=1;
+ 407   2          if(gTimer_1ms%100 == 0)   gFlag_100ms=1;
+ 408   2          if(gTimer_1ms%200 == 0)   gFlag_200ms=1;
+ 409   2          if(gTimer_1ms%250 == 0)   gFlag_250ms=1;
+ 410   2          if(gTimer_1ms%1000 == 0)  gFlag_1000ms=1;
+ 411   2          display_IO(); 
+ 412   2          Uart1_Int_T2();
+ 413   2          if(gTimer_1ms%1000 == 0)
+ 414   2          {
+ 415   3           Timer0_Init_MeasureFreq();
+ 416   3          }
+ 417   2          else if(gTimer_1ms%1000 == 500)
+ 418   2          {
+ 419   3            TR0 = 0;
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 8   
+
+ 420   3            Frequency = (TH0*256+TL0)*2;
+ 421   3          }
+ 422   2      
+ 423   2        }
+ 424   1        if(temp8 == 0) externaldevice_Motor(1);
+ 425   1        else if((PWMMod == 0) && (temp8 == 2)) externaldevice_Motor(0);
+ 426   1        else if((PWMMod == 1) && (temp8 == 8)) externaldevice_Motor(0);
+ 427   1      }
+ 428          //////////////////////////////////////////////////
+ 429          void display_IO(void)
+ 430          {
+ 431   1        static unsigned char dispcom_IO = 0;
+ 432   1      
+ 433   1        P0 = 0xFF; //使段选全部输出为高，从而使所有数码管消隐
+ 434   1        P2 = (P2 & 0x1F)|0XE0;//0b 111X XXXX 使138译码输入CBA为7，Y7输出低电平，段选573的LE为�
+             -�，锁存状态解除
+ 435   1        P2 &= 0x1F;//0b 000X XXXX //锁存数据
+ 436   1        P0 = 0;
+ 437   1        //位选
+ 438   1        P2 = (P2 & 0X1F)|0XC0;//0b 110X XXXX 使138译码输入CBA为6，Y6输出低电平，位选573的LE为�
+             -�，锁存状态解除
+ 439   1        P0 = 1<<dispcom_IO;
+ 440   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+ 441   1        //段选
+ 442   1        P0 = 0xFF;
+ 443   1        P2 = (P2 & 0X1F)|0XE0;//0b 111X XXXX 使138译码输入CBA为7，Y7输出低电平，段选573的LE为�
+             -�，锁存状态解除
+ 444   1        P0 = ~disptab[dispbuf[dispcom_IO]];
+ 445   1        P2 &= 0x1F;//0b 000X XXXX //锁存数据
+ 446   1      
+ 447   1        dispcom_IO++;
+ 448   1        if (dispcom_IO >= 8) dispcom_IO = 0;
+ 449   1      }
+ 450          void display_MM(void)
+ 451          {
+ 452   1        EA = 0;//关闭中断总使能
+ 453   1        XBYTE[0X8000] = 0;
+ 454   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+ 455   1        EA = 1;//打开中断总使能
+ 456   1      }
+ 457          
+ 458          /////////////////////////////////
+ 459          unsigned char BTN_KeyBoardScan(void)   //独立按键扫描程序，无有效按键按下时，返回0xFF;
+             -按键按下，返回对应序号；按键长按时，每过一段时间，返回对应序号+10；松手时，返回对
+             -应序号+20。
+ 460          {
+ 461   1        static unsigned char KeyPressBTN = 0; //存储按键按压时长
+ 462   1        static unsigned char KeyFreeBTN = 0;  //按键松开标志
+ 463   1        static unsigned char KeyValueBTN = 0; //存储按键键值
+ 464   1        static unsigned char IntervalBTN = 55; //存储长按键时，键值返回的时间间隔，550ms
+ 465   1        unsigned char temp;
+ 466   1        P3 |= 0x0F;
+ 467   1        temp = (P3 & 0x0F);
+ 468   1        if(temp != 0x0F) //是否有键被按下
+ 469   1        {
+ 470   2          if(KeyPressBTN < 200) KeyPressBTN++;
+ 471   2          if(KeyPressBTN < 5)
+ 472   2          {
+ 473   3            return 0xFF;
+ 474   3          }
+ 475   2          else if(KeyPressBTN == 5)
+ 476   2          {
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 9   
+
+ 477   3            KeyFreeBTN = 1;
+ 478   3            IntervalBTN = 55;
+ 479   3            switch(temp)
+ 480   3            {
+ 481   4              case 0x0E:KeyValueBTN = 7;break;
+ 482   4              case 0x0D:KeyValueBTN = 6;break;
+ 483   4              case 0x0B:KeyValueBTN = 5;break;
+ 484   4              case 0x07:KeyValueBTN = 4;break;
+ 485   4              //如果需要组合键，可根据键值增加情况
+ 486   4              default:KeyValueBTN = 0xFF; KeyFreeBTN = 0;IntervalBTN = 0;KeyPressBTN = 0;break;
+ 487   4            }
+ 488   3            return KeyValueBTN;
+ 489   3          }
+ 490   2          else //处理长按键
+ 491   2          {
+ 492   3            if(IntervalBTN)
+ 493   3            {
+ 494   4              IntervalBTN--;
+ 495   4              if(IntervalBTN == 0)
+ 496   4              {
+ 497   5                IntervalBTN = 55;
+ 498   5                return KeyValueBTN+10;
+ 499   5              }
+ 500   4            }
+ 501   3            else IntervalBTN = 55;
+ 502   3            return 0xFF;
+ 503   3          }
+ 504   2        }
+ 505   1        else //无键按下或已释放
+ 506   1        {
+ 507   2          KeyPressBTN = 0;
+ 508   2          if(KeyFreeBTN == 1)
+ 509   2          {
+ 510   3            KeyFreeBTN = 0;
+ 511   3            return KeyValueBTN+20;
+ 512   3          }
+ 513   2          return 0xFF;
+ 514   2        }
+ 515   1      }
+ 516          //////////////////////////////////////
+ 517          unsigned char KBD_KeyBoardScan(void)  //矩阵按键扫描程序，无有效按键按下时，返回0xFF;�
+             -��键按下，返回对应序号；按键长按时，过一段时间，返回对应序号+20；松手时，返回对应�
+             -��号+40。（4-19)
+ 518          {
+ 519   1        static unsigned char KeyPressKBD = 0; //存储按键按压时长
+ 520   1        static unsigned char KeyFreeKBD = 0;  //按键松开标志
+ 521   1        static unsigned char KeyValueKBD = 0; //存储按键键值
+ 522   1        static unsigned char IntervalKBD = 55; //存储长按键时，键值返回的时间间隔，550ms
+ 523   1        unsigned char S1;
+ 524   1        unsigned char S2;
+ 525   1        P3 = 0x0F;
+ 526   1        P42 = 0;
+ 527   1        P44 = 0;
+ 528   1        S1 = (P3 & 0x0F);
+ 529   1        if(S1 != 0x0F) //有键被按下
+ 530   1        {
+ 531   2          if(KeyPressKBD < 200) KeyPressKBD++;
+ 532   2          if(KeyPressKBD < 5)
+ 533   2          {
+ 534   3            return 0xFF;
+ 535   3          }
+ 536   2          else if(KeyPressKBD == 5)
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 10  
+
+ 537   2          {
+ 538   3            KeyFreeKBD = 1;
+ 539   3            IntervalKBD = 55;
+ 540   3            S1 = (P3 & 0x0F);
+ 541   3            P3 = 0xF0;
+ 542   3            P42 = 1;
+ 543   3            P44 = 1;
+ 544   3            S2 = (P3 & 0xF0);
+ 545   3            if(P42) S2 |= 0x40;
+ 546   3            else S2 &= (~0x40);
+ 547   3            if(P44) S2 |= 0x80;
+ 548   3            else S2 &= (~0x80);
+ 549   3            S1 |= S2;
+ 550   3      
+ 551   3            switch(S1)
+ 552   3            {
+ 553   4              case 0x77:KeyValueKBD = 4;break;
+ 554   4              case 0x7B:KeyValueKBD = 5;break;
+ 555   4              case 0x7D:KeyValueKBD = 6;break;
+ 556   4              case 0x7E:KeyValueKBD = 7;break;
+ 557   4              case 0xB7:KeyValueKBD = 8;break;
+ 558   4              case 0xBB:KeyValueKBD = 9;break;
+ 559   4              case 0xBD:KeyValueKBD = 10;break;
+ 560   4              case 0xBE:KeyValueKBD = 11;break;
+ 561   4              case 0xD7:KeyValueKBD = 12;break;
+ 562   4              case 0xDB:KeyValueKBD = 13;break;
+ 563   4              case 0xDD:KeyValueKBD = 14;break;
+ 564   4              case 0xDE:KeyValueKBD = 15;break;
+ 565   4              case 0xE7:KeyValueKBD = 16;break;
+ 566   4              case 0xEB:KeyValueKBD = 17;break;
+ 567   4              case 0xED:KeyValueKBD = 18;break;
+ 568   4              case 0xEE:KeyValueKBD = 19;break;
+ 569   4              //如果需要组合键，可根据键值增加情况
+ 570   4              default:KeyValueKBD = 0xFF; KeyFreeKBD = 0;IntervalKBD = 0;KeyPressKBD = 0;break;
+ 571   4            }
+ 572   3            return KeyValueKBD;
+ 573   3          }
+ 574   2          else //处理长按键
+ 575   2          {
+ 576   3            if(IntervalKBD)
+ 577   3            {
+ 578   4              IntervalKBD--;
+ 579   4              if(IntervalKBD == 0)
+ 580   4              {
+ 581   5                IntervalKBD = 55;
+ 582   5                return KeyValueKBD+20;
+ 583   5              }
+ 584   4            }
+ 585   3            else IntervalKBD = 55;
+ 586   3            return 0xFF;
+ 587   3          }
+ 588   2        }
+ 589   1        else //无键按下或已释放
+ 590   1        {
+ 591   2          KeyPressKBD = 0;
+ 592   2          if(KeyFreeKBD == 1)
+ 593   2          {
+ 594   3            KeyFreeKBD = 0;
+ 595   3            return KeyValueKBD+40;
+ 596   3          }
+ 597   2          return 0xFF;
+ 598   2        }
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 11  
+
+ 599   1      }
+ 600          
+ 601          /////////////////////////
+ 602          
+ 603          void Uart1_Int_T2(void)
+ 604          {
+ 605   1        SCON = 0x50;    //8位数据,可变波特率
+ 606   1        AUXR |= 0x01;   //串口1选择定时器2为波特率发生器
+ 607   1        AUXR |= 0x04;   //定时器时钟1T模式
+ 608   1        T2L = (65536 - (FOSC/4/BAUD));   //设置波特率重装值
+ 609   1        T2H = (65536 - (FOSC/4/BAUD))>>8;
+ 610   1        AUXR |= 0x10;   //定时器2开始计时
+ 611   1        ES = 1;                     //使能串口1中断
+ 612   1        EA = 1;
+ 613   1      }
+ 614          /////////////////////////
+ 615          /*----------------------------
+ 616          UART 中断服务程序
+ 617          -----------------------------*/
+ 618          void Uart(void) interrupt 4
+ 619          {
+ 620   1        unsigned char i;
+ 621   1          if (RI)
+ 622   1          {
+ 623   2              RI = 0;                 //清除RI位
+ 624   2              Uart_Rev_Data[Uart_Rev_Num] = SBUF;               //存储接收到的数据
+ 625   2              SBUF = Uart_Rev_Data[Uart_Rev_Num];                //用于调试
+ 626   2              Uart_Rev_Num++;
+ 627   2              if(Uart_Rev_Num>19)
+ 628   2              {
+ 629   3                for(i=0;i<20;i++)
+ 630   3                {
+ 631   4                  Uart_Rev_Data[i] = 0;
+ 632   4                }
+ 633   3                Uart_Rev_Num = 0;
+ 634   3                Uart_Rev_DelayTimees = 0;
+ 635   3              }
+ 636   2              else Uart_Rev_DelayTimees = 5;
+ 637   2      
+ 638   2      
+ 639   2          }
+ 640   1      }
+ 641          /////////////// 
+ 642          void SendWave(void)
+ 643          {
+ 644   1        unsigned char i;
+ 645   1        for(i = 0;i<8;i++)
+ 646   1        ulTX = 0;
+ 647   1        somenop;somenop;somenop;somenop;somenop;
+ 648   1        somenop;somenop;somenop;somenop;somenop;somenop;
+ 649   1        ulTX = 1;
+ 650   1        somenop;somenop;somenop;somenop;somenop;
+ 651   1        somenop;somenop;somenop;somenop;somenop;somenop;
+ 652   1      }
+ 653          ////////////////
+ 654          void Timer0Init_UtralSonic()
+ 655          {
+ 656   1        AUXR &= 0x7F;     //定时器时钟12T模式,进入T0计数器的脉冲，周期1us
+ 657   1        TMOD &= 0xF0;     //设置定时器模式
+ 658   1        TL0 = 0;          //设置定时初始值
+ 659   1        TH0 = 0;          //设置定时初始值
+ 660   1        TF0 = 0;          //清除TF0标志
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 12  
+
+ 661   1        TR0 = 1;          //定时器0开始计时
+ 662   1      }
+ 663          ///////////
+ 664          void ranging(void)
+ 665          {
+ 666   1        unsigned int time;
+ 667   1        SendWave();
+ 668   1        Timer0Init_UtralSonic();
+ 669   1        while ((ulRX == 1) && (TH0 < 51));//65.535/5us*34cm/s/2=理论最大测量长度 200余cm  
+ 670   1        TR0 = 0;
+ 671   1        if(TH0>=51)//没有收到回波
+ 672   1        {
+ 673   2          distence = 999;
+ 674   2        }
+ 675   1        else
+ 676   1        {
+ 677   2          time = TH0*256+TL0;//us
+ 678   2          distence = (unsigned int)(time*0.017);//cm
+ 679   2        }
+ 680   1      }
+ 681          
+ 682          //////////////////////
+ 683          void Timer0_Init_MeasureFreq(void)
+ 684          {
+ 685   1        AUXR &= 0x7F;     //定时器时钟12T模式,进入T0计数器的脉冲，周期1us
+ 686   1        TMOD &= 0xF0;     //设置定时器模式
+ 687   1        TMOD |= 0x04;     //设置成脉冲计数模式
+ 688   1        TL0 = 0;          //设置定时初始值
+ 689   1        TH0 = 0;          //设置定时初始值
+ 690   1        TF0 = 0;          //清除TF0标志
+ 691   1        TR0 = 1;          //定时器0开始计时
+ 692   1        ET0 = 0;          //关闭中断
+ 693   1      }
+ 694          
+ 695          //////////////////
+ 696          void externaldevice_Motor(unsigned char MotorData)
+ 697          {
+ 698   1        unsigned char extdev_data=0;
+ 699   1        if(MotorData) extdev_data|=0X20;
+ 700   1        EA = 0;//关闭中断总使能
+ 701   1        P0 = extdev_data;
+ 702   1        P2 = (P2 & 0X1F)|0XA0;//0b 101X XXXX 使138译码输入CBA为5，Y5输出低电平，573的LE为高锁�
+             -�状态解除
+ 703   1        P0 = extdev_data;
+ 704   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+ 705   1        EA = 1;//打开中断总使能
+ 706   1      }
+ 707          
+ 708          
+*** WARNING C294 IN LINE 146 OF ׼��֤��.c: unreachable code
+*** WARNING C294 IN LINE 270 OF ׼��֤��.c: unreachable code
+*** WARNING C294 IN LINE 311 OF ׼��֤��.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1596    ----
+   CONSTANT SIZE    =     55    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     46       5
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      8    ----
+C51 COMPILER V9.54   ________                                                              03/01/2024 21:27:07 PAGE 13  
+
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  3 WARNING(S),  0 ERROR(S)

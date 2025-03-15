@@ -1,0 +1,6 @@
+".\Objects\准考证号.obj",
+".\Objects\ds1302.obj",
+".\Objects\iic.obj",
+".\Objects\onewire.obj" 
+TO ".\Objects\准考证号" 
+PRINT(".\Listings\准考证号.m51") RAMSIZE(256) 

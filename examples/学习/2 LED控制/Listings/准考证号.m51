@@ -1,0 +1,187 @@
+BL51 BANKED LINKER/LOCATER V6.22                                                        08/27/2023  21:37:00  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
+D:\KEIL\C51\BIN\BL51.EXE .\Objects\准考证号.obj TO .\Objects\准考证号 PRINT (.\Listings\准考证号.m51) RAMSIZE (256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  .\Objects\准考证号.obj (________)
+  D:\KEIL\C51\LIB\C51S.LIB (?C_STARTUP)
+
+
+LINK MAP OF MODULE:  .\Objects\准考证号 (________)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            DATA    0008H     0001H     UNIT         _DATA_GROUP_
+            IDATA   0009H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+            CODE    0003H     002FH     UNIT         ?PR?MAIN?________
+            CODE    0032H     0021H     UNIT         ?PR?_EXTERNALDEVICE_IO?________
+            CODE    0053H     001FH     UNIT         ?PR?_DELAY_MS?________
+            CODE    0072H     001AH     UNIT         ?PR?_EXTERNALDEVICE_MM?________
+            CODE    008CH     0014H     UNIT         ?PR?_LED_IO?________
+            CODE    00A0H     000DH     UNIT         ?PR?_LED_MM?________
+            CODE    00ADH     000CH     UNIT         ?C_C51STARTUP
+
+
+
+OVERLAY MAP OF MODULE:   .\Objects\准考证号 (________)
+
+
+SEGMENT                                   DATA_GROUP 
+  +--> CALLED SEGMENT                   START    LENGTH
+-------------------------------------------------------
+?C_C51STARTUP                           -----    -----
+  +--> ?PR?MAIN?________
+
+?PR?MAIN?________                       0008H    0001H
+  +--> ?PR?_EXTERNALDEVICE_IO?________
+  +--> ?PR?_LED_IO?________
+  +--> ?PR?_DELAY_MS?________
+
+
+
+SYMBOL TABLE OF MODULE:  .\Objects\准考证号 (________)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+  -------         MODULE        ________
+  C:0000H         SYMBOL        _ICE_DUMMY_
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/27/2023  21:37:00  PAGE 2
+
+
+  D:0080H         PUBLIC        P0
+  D:0090H         PUBLIC        P1
+  D:00A0H         PUBLIC        P2
+  D:00B0H         PUBLIC        P3
+  D:00C0H         PUBLIC        P4
+  D:00C8H         PUBLIC        P5
+  B:00A8H.7       PUBLIC        EA
+  D:00E8H         PUBLIC        P6
+  D:00F8H         PUBLIC        P7
+  D:00A8H         PUBLIC        IE
+  D:00B8H         PUBLIC        IP
+  D:00D8H         PUBLIC        CCON
+  C:0003H         PUBLIC        main
+  D:0098H         PUBLIC        SCON
+  D:0088H         PUBLIC        TCON
+  C:008CH         PUBLIC        _LED_IO
+  C:00A0H         PUBLIC        _LED_MM
+  C:0053H         PUBLIC        _delay_ms
+  C:0032H         PUBLIC        _externaldevice_IO
+  C:0072H         PUBLIC        _externaldevice_MM
+  D:00D0H         PUBLIC        PSW
+  -------         PROC          MAIN
+  -------         DO            
+  D:0008H         SYMBOL        i
+  -------         ENDDO         
+  C:0003H         LINE#         15
+  C:0003H         LINE#         16
+  C:0003H         LINE#         17
+  C:0006H         LINE#         18
+  C:000BH         LINE#         20
+  C:000BH         LINE#         21
+  C:000BH         LINE#         22
+  C:001DH         LINE#         23
+  C:0024H         LINE#         24
+  C:0026H         LINE#         25
+  C:002DH         LINE#         26
+  C:0030H         LINE#         28
+  -------         ENDPROC       MAIN
+  -------         PROC          _EXTERNALDEVICE_IO
+  D:0007H         SYMBOL        beepdata
+  D:0005H         SYMBOL        relaydata
+  -------         DO            
+  D:0006H         SYMBOL        extdev_data
+  -------         ENDDO         
+  C:0032H         LINE#         31
+  C:0032H         LINE#         32
+  C:0032H         LINE#         33
+  C:0034H         LINE#         34
+  C:0039H         LINE#         35
+  C:003FH         LINE#         36
+  C:0041H         LINE#         37
+  C:0043H         LINE#         38
+  C:004BH         LINE#         39
+  C:004DH         LINE#         40
+  C:0050H         LINE#         41
+  C:0052H         LINE#         42
+  -------         ENDPROC       _EXTERNALDEVICE_IO
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/27/2023  21:37:00  PAGE 3
+
+
+  -------         PROC          _EXTERNALDEVICE_MM
+  D:0007H         SYMBOL        beepdata
+  D:0005H         SYMBOL        relaydata
+  -------         DO            
+  D:0006H         SYMBOL        extdev_data
+  -------         ENDDO         
+  C:0072H         LINE#         44
+  C:0072H         LINE#         45
+  C:0072H         LINE#         46
+  C:0074H         LINE#         47
+  C:0079H         LINE#         48
+  C:007FH         LINE#         49
+  C:0081H         LINE#         50
+  C:0086H         LINE#         51
+  C:0089H         LINE#         52
+  C:008BH         LINE#         53
+  -------         ENDPROC       _EXTERNALDEVICE_MM
+  -------         PROC          _DELAY_MS
+  D:0006H         SYMBOL        delaydata
+  -------         DO            
+  D:0004H         SYMBOL        i
+  -------         ENDDO         
+  C:0053H         LINE#         55
+  C:0053H         LINE#         56
+  C:0053H         LINE#         58
+  C:005DH         LINE#         59
+  C:0071H         LINE#         60
+  -------         ENDPROC       _DELAY_MS
+  -------         PROC          _LED_IO
+  D:0007H         SYMBOL        LEDdata
+  C:008CH         LINE#         63
+  C:008CH         LINE#         64
+  C:008CH         LINE#         66
+  C:008EH         LINE#         67
+  C:0090H         LINE#         68
+  C:0098H         LINE#         69
+  C:009AH         LINE#         70
+  C:009DH         LINE#         71
+  C:009FH         LINE#         72
+  -------         ENDPROC       _LED_IO
+  -------         PROC          _LED_MM
+  D:0007H         SYMBOL        LEDdata
+  C:00A0H         LINE#         74
+  C:00A0H         LINE#         75
+  C:00A0H         LINE#         76
+  C:00A2H         LINE#         77
+  C:00A7H         LINE#         78
+  C:00AAH         LINE#         79
+  C:00ACH         LINE#         80
+  -------         ENDPROC       _LED_MM
+  -------         ENDMOD        ________
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_EXTERNALDEVICE_MM?________
+
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_LED_MM?________
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/27/2023  21:37:00  PAGE 4
+
+
+
+Program Size: data=10.0 xdata=0 code=185
+LINK/LOCATE RUN COMPLETE.  2 WARNING(S),  0 ERROR(S)

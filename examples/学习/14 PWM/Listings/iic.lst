@@ -1,0 +1,199 @@
+C51 COMPILER V9.54   IIC                                                                   03/01/2024 21:27:08 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE IIC
+OBJECT MODULE PLACED IN .\Objects\iic.obj
+COMPILER INVOKED BY: D:\keil\KeilC51\C51\BIN\C51.EXE iic.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\
+                    -iic.lst) TABS(2) OBJECT(.\Objects\iic.obj)
+
+line level    source
+
+   1          /*
+   2            程序说明: IIC总线驱动程序
+   3            软件环境: Keil uVision 4.10 
+   4            硬件环境: CT107单片机综合实训平台 8051，12MHz
+   5            日    期: 2011-8-9
+   6          */
+   7          
+   8          #include "stc15f2k60s2.h"
+   9          #include "intrins.h"
+  10          #include "iic.h"
+  11          
+  12          #define DELAY_TIME 5
+  13          
+  14          #define SlaveAddrW 0xA0
+  15          #define SlaveAddrR 0xA1
+  16          
+  17          
+  18          //总线引脚定义
+  19          sbit SDA = P2^1;  /* 数据线 */
+  20          sbit SCL = P2^0;  /* 时钟线 */
+  21          
+  22          void IIC_Delay(unsigned char i)
+  23          {
+  24   1          do{_nop_();}
+  25   1          while(i--);        
+  26   1      }
+  27          //总线启动条件
+  28          void IIC_Start(void)
+  29          {
+  30   1          SDA = 1;
+  31   1          SCL = 1;
+  32   1          IIC_Delay(DELAY_TIME);
+  33   1          SDA = 0;
+  34   1          IIC_Delay(DELAY_TIME);
+  35   1          SCL = 0;  
+  36   1      }
+  37          
+  38          //总线停止条件
+  39          void IIC_Stop(void)
+  40          {
+  41   1          SDA = 0;
+  42   1          SCL = 1;
+  43   1          IIC_Delay(DELAY_TIME);
+  44   1          SDA = 1;
+  45   1          IIC_Delay(DELAY_TIME);
+  46   1      }
+  47          
+  48          //发送应答
+  49          void IIC_SendAck(bit ackbit)
+  50          {
+  51   1          SCL = 0;
+  52   1          SDA = ackbit;           // 0：应答，1：非应答
+  53   1          IIC_Delay(DELAY_TIME);
+  54   1          SCL = 1;
+C51 COMPILER V9.54   IIC                                                                   03/01/2024 21:27:08 PAGE 2   
+
+  55   1          IIC_Delay(DELAY_TIME);
+  56   1          SCL = 0; 
+  57   1          SDA = 1;
+  58   1          IIC_Delay(DELAY_TIME);
+  59   1      }
+  60          
+  61          //等待应答
+  62          bit IIC_WaitAck(void)
+  63          {
+  64   1          bit ackbit;
+  65   1        
+  66   1          SCL  = 1;
+  67   1          IIC_Delay(DELAY_TIME);
+  68   1          ackbit = SDA;
+  69   1          SCL = 0;
+  70   1          IIC_Delay(DELAY_TIME);
+  71   1          return ackbit;
+  72   1      }
+  73          
+  74          //通过I2C总线发送数据
+  75          void IIC_SendByte(unsigned char byt)
+  76          {
+  77   1          unsigned char i;
+  78   1      
+  79   1          for(i=0; i<8; i++)
+  80   1          {
+  81   2              SCL  = 0;
+  82   2              IIC_Delay(DELAY_TIME);
+  83   2              if(byt & 0x80) SDA  = 1;
+  84   2              else SDA  = 0;
+  85   2              IIC_Delay(DELAY_TIME);
+  86   2              SCL = 1;
+  87   2              byt <<= 1;
+  88   2              IIC_Delay(DELAY_TIME);
+  89   2          }
+  90   1          SCL  = 0;  
+  91   1      }
+  92          
+  93          //从I2C总线上接收数据
+  94          unsigned char IIC_RecByte(void)
+  95          {
+  96   1          unsigned char i, da;
+  97   1          for(i=0; i<8; i++)
+  98   1          {   
+  99   2            SCL = 1;
+ 100   2        IIC_Delay(DELAY_TIME);
+ 101   2        da <<= 1;
+ 102   2        if(SDA) da |= 1;
+ 103   2        SCL = 0;
+ 104   2        IIC_Delay(DELAY_TIME);
+ 105   2          }
+ 106   1          return da;    
+ 107   1      }
+ 108          
+ 109          //单片机向EEPROM写一个字节的数据 
+ 110          void write_EEPROM(unsigned char add,unsigned char EEPData)
+ 111          {
+ 112   1          IIC_Start();                        //起始信号
+ 113   1          IIC_SendByte(SlaveAddrW);           //写控制字
+ 114   1          IIC_WaitAck();                      //应答
+ 115   1          IIC_SendByte(add);                  //发送要写数据的地址
+ 116   1          IIC_WaitAck();                      //应答
+C51 COMPILER V9.54   IIC                                                                   03/01/2024 21:27:08 PAGE 3   
+
+ 117   1          IIC_SendByte(EEPData);              //发送要写的数据
+ 118   1          IIC_WaitAck();                      //应答
+ 119   1          IIC_Stop();                         //停止信号
+ 120   1      }
+ 121          
+ 122          //单片机向EEPROM读一个字节的数据
+ 123          unsigned char read_EEPROM(unsigned char add) 
+ 124          {
+ 125   1          unsigned char temp;
+ 126   1          IIC_Start();                        //起始信号
+ 127   1          IIC_SendByte(SlaveAddrW);           //伪写控制字
+ 128   1          IIC_WaitAck();                      //应答
+ 129   1          IIC_SendByte(add);                  //发送要读数据的地址
+ 130   1          IIC_WaitAck();                      //应答
+ 131   1          IIC_Start();                        //起始信号
+ 132   1          IIC_SendByte(SlaveAddrR);           //读控制字
+ 133   1          IIC_WaitAck();                      //应答
+ 134   1          temp = IIC_RecByte();               //读数据
+ 135   1          IIC_SendAck(1);                     //应答
+ 136   1          IIC_Stop();                         //停止信号
+ 137   1          return temp;
+ 138   1      }
+ 139          
+ 140          //单片机向8591写一个字节的数据,进行DA转换
+ 141          void DAC_PCF8591(unsigned char DACData)
+ 142          {
+ 143   1          IIC_Start();                        //起始信号
+ 144   1          IIC_SendByte(0x90);                 //写控制字
+ 145   1          IIC_WaitAck();                      //应答
+ 146   1          IIC_SendByte(0x40);                 //发送地址
+ 147   1          IIC_WaitAck();                      //应答
+ 148   1          IIC_SendByte(DACData);              //发送要写的数据
+ 149   1          IIC_WaitAck();                      //应答
+ 150   1          IIC_Stop();                         //停止信号
+ 151   1      } 
+ 152          
+ 153          //单片机AD转换，输入参数为通道号（0-3）
+ 154          unsigned char ADC_PCF8591(unsigned char channel)
+ 155          {
+ 156   1          unsigned char temp;
+ 157   1          IIC_Start();                        //起始信号
+ 158   1          IIC_SendByte(0x90);                 //伪写控制字
+ 159   1          IIC_WaitAck();                      //应答
+ 160   1          IIC_SendByte(channel);              //发送通道号
+ 161   1          IIC_WaitAck();                      //应答
+ 162   1          IIC_Start();                        //起始信号
+ 163   1          IIC_SendByte(0x91);                 //读控制字
+ 164   1          IIC_WaitAck();                      //应答
+ 165   1          temp = IIC_RecByte();               //读数据
+ 166   1          IIC_SendAck(1);                     //应答
+ 167   1          IIC_Stop();                         //停止信号
+ 168   1          return temp;
+ 169   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    297    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+C51 COMPILER V9.54   IIC                                                                   03/01/2024 21:27:08 PAGE 4   
+
+   BIT SIZE         =   ----       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

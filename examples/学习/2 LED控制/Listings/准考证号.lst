@@ -1,0 +1,112 @@
+C51 COMPILER V9.54   ________                                                              08/27/2023 21:37:00 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ________
+OBJECT MODULE PLACED IN .\Objects\׼��֤��.obj
+COMPILER INVOKED BY: D:\keil\C51\BIN\C51.EXE ׼��֤��.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\׼�
+                    -�֤��.lst) OBJECT(.\Objects\׼��֤��.obj)
+
+line level    source
+
+   1          #include "stc15f2k60s2.h"
+   2          #include "absacc.h"
+   3          
+   4          /////函数声明////
+   5          void externaldevice_IO(unsigned char beepdata,unsigned char relaydata);//IO模式，控制外部设备（�
+             -��鸣器、继电器）
+   6          void externaldevice_MM(unsigned char beepdata,unsigned char relaydata);//MM模式，控制外部设备（�
+             -��鸣器、继电器）
+   7          void delay_ms(unsigned int delaydata);//延时函数
+   8          
+   9          void LED_IO(unsigned char LEDdata);//IO模式，控制LED
+  10          void LED_MM(unsigned char LEDdata);//MM模式，控制LED
+  11          
+  12          ////全局变量定义//////
+  13          
+  14          ///主函数//////
+  15          void main()
+  16          {
+  17   1        unsigned char i=0;
+  18   1        externaldevice_IO(0,0);
+  19   1        //实现以秒为间隔，LED流水灯
+  20   1        while(1)
+  21   1        {
+  22   2          LED_IO(~(0x01<<i));
+  23   2          delay_ms(600);
+  24   2          i++;
+  25   2          if(i>=8)
+  26   2          i=0;
+  27   2          
+  28   2        }
+  29   1      }
+  30          ////////////////////////////////
+  31          void externaldevice_IO(unsigned char beepdata,unsigned char relaydata)//IO模式，控制外部设备（�
+             -�鸣器、继电器）
+  32          {
+  33   1        unsigned char extdev_data=0;
+  34   1        if(beepdata) extdev_data|=0X40;
+  35   1        if(relaydata) extdev_data|=0X10;
+  36   1        EA = 0;//关闭中断总使能
+  37   1        P0 = extdev_data;
+  38   1        P2 = (P2 & 0X1F)|0XA0;//0b 101X XXXX 使138译码输入CBA为5，Y5输出低电平，573的LE为高锁�
+             -�状态解除
+  39   1        P0 = extdev_data;
+  40   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+  41   1        EA = 1;//打开中断总使能
+  42   1      }
+  43          ////////////////////////////////
+  44          void externaldevice_MM(unsigned char beepdata,unsigned char relaydata)//MM模式，控制外部设备（�
+             -�鸣器、继电器）
+  45          {
+  46   1        unsigned char extdev_data=0;
+  47   1        if(beepdata) extdev_data|=0X40;
+  48   1        if(relaydata) extdev_data|=0X10;
+  49   1        EA = 0;//关闭中断总使能
+C51 COMPILER V9.54   ________                                                              08/27/2023 21:37:00 PAGE 2   
+
+  50   1        XBYTE[0XA000] = extdev_data;
+  51   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+  52   1        EA = 1;//打开中断总使能
+  53   1      }
+  54          ////////////////////////////////
+  55          void delay_ms(unsigned int delaydata)//延时函数
+  56          {
+  57   1        unsigned int i;
+  58   1        while(delaydata--)
+  59   1          for(i=640;i>0;i--);
+  60   1      }
+  61          
+  62          /////////////////////////////
+  63          void LED_IO(unsigned char LEDdata)//IO模式，控制LED
+  64          {
+  65   1        
+  66   1        EA = 0;//关闭中断总使能
+  67   1        P0 = LEDdata;
+  68   1        P2 = (P2 & 0X1F)|0X80;//0b 100X XXXX 使138译码输入CBA为5，Y5输出低电平，573的LE为高锁�
+             -�状态解除
+  69   1        P0 = LEDdata;
+  70   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+  71   1        EA = 1;//打开中断总使能
+  72   1      }
+  73          
+  74          void LED_MM(unsigned char LEDdata)//MM模式，控制LED
+  75          {
+  76   1        EA = 0;//关闭中断总使能
+  77   1        (XBYTE)[0X8000] = LEDdata;
+  78   1        P2 &= 0X1F;//0b 000X XXXX //锁存数据
+  79   1        EA = 1;//打开中断总使能
+  80   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    170    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
